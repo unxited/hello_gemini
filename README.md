@@ -6,29 +6,26 @@ This application fetches and parses US Visa Bulletins. It takes user input for P
 
 ## Current Status
 
-The application is currently in development. The initial parsing logic has been implemented and is being tested.
+The application is currently in development. The initial parsing logic, HTML parsing, caching, and automatic latest-bulletin discovery have been implemented and are working.
 
 ## Implementation Plan
 
 - [x] **Setup & Initial Debugging:** Fix build environment and initial parsing logic.
-    - [x] Fix Gradle permission issues.
-    - [x] Switch from `BasicExtractionAlgorithm` to `SpreadsheetExtractionAlgorithm` for better table parsing.
-    - [x] Refactor `VisaBulletinParser` to handle the new table structure.
-- [ ] **Verify Core Functionality:** Confirm that the application can successfully download and parse a visa bulletin.
-    - [ ] Run the application and check the output.
-    - [ ] Adjust table indexing in `App.kt` if necessary.
-    - [ ] Clean up raw data output and present parsed data clearly.
-- [ ] **Implement Caching Mechanism:** Store parsed visa bulletin data to avoid re-downloading.
-    - [ ] Create a caching directory.
-    - [ ] Implement logic to check for cached data before downloading.
-    - [ ] Save parsed data to a file (e.g., JSON) after a successful download.
-    - [ ] Use a JSON serialization library like `kotlinx.serialization`.
-- [ ] **Enhance User Interaction:** Add functionality to take user input.
+- [x] **Change of Strategy:** Switched from PDF to HTML parsing for better reliability.
+- [x] **Implement HTML Parsing:** Fetch and parse the visa bulletin HTML.
+    - [x] Remove PDF parsing libraries (`pdfbox`, `tabula-java`).
+    - [x] Use `jsoup` to fetch the HTML content from the State Department website.
+    - [x] Implement a new parser in `VisaBulletinParser.kt` to extract data from the HTML `<table>` elements.
+- [x] **Implement Caching Mechanism:** Store parsed visa bulletin data to avoid re-fetching.
+    - [x] Create a caching directory (if not already present).
+    - [x] Save the parsed data to a JSON file.
+    - [x] Load data from the cache on subsequent runs.
+- [x] **Enhance User Interaction:** Add functionality to take user input.
     - [ ] Prompt user for Priority Date, Category, and Country.
     - [ ] Implement logic to compare user's priority date with the bulletin.
     - [ ] Display a clear result to the user.
-- [ ] **Improve Bulletin Fetching:** Automatically find the latest visa bulletin URL.
-    - [ ] Scrape the State Department website to find the link to the latest bulletin instead of using a hardcoded URL.
+- [x] **Improve Bulletin Fetching:** Automatically find the latest visa bulletin URL.
+    - [x] Scrape the State Department website to find the link to the latest bulletin instead of using a hardcoded URL.
 - [ ] **Add Unit Tests:** Ensure the application is robust.
     - [ ] Write tests for the parser.
     - [ ] Write tests for the caching logic.

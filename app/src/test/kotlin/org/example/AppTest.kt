@@ -5,10 +5,12 @@ package org.example
 
 import kotlin.test.Test
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class AppTest {
-    @Test fun appHasAGreeting() {
-        val classUnderTest = App()
-        assertNotNull(classUnderTest.greeting, "app should have a greeting")
+    @Test fun testFetchLatestBulletinUrl() {
+        val url = fetchLatestBulletinUrl()
+        assertNotNull(url, "fetchLatestBulletinUrl should return a URL")
+        assertTrue(url!!.startsWith("https://"), "URL should start with https://")
     }
 }

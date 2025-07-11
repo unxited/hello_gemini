@@ -11,6 +11,7 @@ plugins {
 
     // Apply the application plugin to add support for building a CLI application in Java.
     application
+    kotlin("plugin.serialization") version "1.9.21"
 }
 
 repositories {
@@ -37,9 +38,8 @@ dependencies {
     // Jsoup for HTML parsing
     implementation("org.jsoup:jsoup:1.17.2")
 
-    // Apache PDFBox for PDF parsing
-    implementation("org.apache.pdfbox:pdfbox:2.0.30")
-    implementation("technology.tabula:tabula:1.0.5")
+    // Kotlinx Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
         
 }
 

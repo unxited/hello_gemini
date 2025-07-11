@@ -3,14 +3,35 @@
  */
 package org.example
 
-import kotlin.test.Test
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.*
+import java.time.LocalDate
 
 class AppTest {
     @Test fun testFetchLatestBulletinUrl() {
         val url = fetchLatestBulletinUrl()
         assertNotNull(url, "fetchLatestBulletinUrl should return a URL")
         assertTrue(url!!.startsWith("https://"), "URL should start with https://")
+    }
+
+    @Test fun `parseUserDate should handle valid dd-MM-yyyy format`() {
+        val expected = LocalDate.of(2023, 10, 26)
+        assertEquals(expected, parseUserDate("26-10-2023"))
+    }
+
+    @Test fun `parseUserDate should return null for invalid formats`() {
+        assertNull(parseUserDate("2023-10-26"))
+        assertNull(parseUserDate("10-26-2023"))
+        assertNull(parseUserDate("26 OCT 2023"))
+        assertNull(parseUserDate("not a date"))
+    }
+
+    @Test fun `parseUserDate should return null for C and U values`() {
+        assertNull(parseUserDate("C"))
+        assertNull(parseUserDate("U"))
+    }
+
+    @Test fun `parseUserDate should handle whitespace`() {
+        val expected = LocalDate.of(2023, 10, 26)
+        assertEquals(expected, parseUserDate("  26-10-2023  "))
     }
 }

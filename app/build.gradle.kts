@@ -55,6 +55,10 @@ application {
     mainClass = "org.example.AppKt"
 }
 
+tasks.withType<JavaExec> {
+    standardInput = System.`in`
+}
+
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()

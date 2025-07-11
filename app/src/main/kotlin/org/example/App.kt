@@ -54,18 +54,18 @@ fun fetchLatestBulletinUrl(): String? {
 
 // helper to parse dates from bulletin strings like 15NOV22/15NOV2022
 fun parseBulletinDate(dateStr: String): LocalDate? {
-    val cleaned = dateStr.trim().uppercase()
+    val cleaned = dateStr.trim().uppercase().replace(Regex("[^A-Z0-9-]"), "")
     if (cleaned == "C" || cleaned == "U") return null
-    val patterns = listOf("ddMMMyy", "ddMMMyyyy")
-    for (p in patterns) {
-        try {
-            return LocalDate.parse(cleaned, DateTimeFormatter.ofPattern(p, Locale.US))
-        } catch (e: DateTimeParseException) { /*try next*/ }
+    val pattern = "dd-MM-yyyy"
+    return try {
+        val formatter = DateTimeFormatter.ofPattern(pattern, Locale.US)
+        LocalDate.parse(cleaned, formatter)
+    } catch (e: DateTimeParseException) {
+        null
     }
-    return null
 }
 
-// helper to parse user input date (expects ddMMMyyyy or ddMMMyy)
+// helper to parse user input date (expects dd-MM-yyyy)
 fun parseUserDate(dateStr: String): LocalDate? = parseBulletinDate(dateStr)
 
 fun main() = runBlocking {
@@ -131,19 +131,26 @@ fun main() = runBlocking {
     if (allCategories.isEmpty()) return@runBlocking
 
     println("\n===== Check Your Priority Date =====")
-    print("Enter your Priority Date (ddMMMyyyy, e.g., 15NOV2022): ")
-    val userDateStr = readLine()?.trim()?.uppercase()
-    val userDate = userDateStr?.let { parseUserDate(it) }
-    if (userDate == null) {
-        println("Invalid date format. Exiting.")
+    print("Enter your Priority Date in dd-MM-yyyy format (e.g., 26-10-2023): ")
+    val userDateStr = readlnOrNull()?.trim()
+    if (userDateStr.isNullOrEmpty()) {
+        println("No date entered. Exiting.")
         return@runBlocking
     }
 
+    val userDate = parseUserDate(userDateStr)
+    if (userDate == null) {
+        println("Could not parse the date '$userDateStr'. Please use the exact format dd-MM-yyyy.")
+        return@runBlocking
+    }
+
+    println("--> Interpreted your priority date as: $userDate")
+
     print("Enter Employment Category (e.g., 1st, 2nd, 3rd, Other Workers, 4th, 5th): ")
-    val userCat = readLine()?.trim()?.uppercase() ?: return@runBlocking
+    val userCat = readlnOrNull()?.trim()?.uppercase() ?: return@runBlocking
 
     print("Enter Region/Country (e.g., INDIA, CHINA- MAINLAND BORN, ALL CHARGEABILITY AREAS EXCEPT THOSE LISTED): ")
-    val userRegionInput = readLine()?.trim()?.uppercase() ?: return@runBlocking
+    val userRegionInput = readlnOrNull()?.trim()?.uppercase() ?: return@runBlocking
 
     val finalActionData = allCategories.filter { it.region.startsWith("Final Action") }
     val match = finalActionData.firstOrNull { c ->

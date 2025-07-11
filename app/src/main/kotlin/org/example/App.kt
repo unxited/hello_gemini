@@ -149,8 +149,14 @@ fun main() = runBlocking {
     print("Enter Employment Category (e.g., 1st, 2nd, 3rd, Other Workers, 4th, 5th): ")
     val userCat = readlnOrNull()?.trim()?.uppercase() ?: return@runBlocking
 
-    print("Enter Region/Country (e.g., INDIA, CHINA- MAINLAND BORN, ALL CHARGEABILITY AREAS EXCEPT THOSE LISTED): ")
-    val userRegionInput = readlnOrNull()?.trim()?.uppercase() ?: return@runBlocking
+    print("Enter Region/Country (e.g., INDIA, CHINA- MAINLAND BORN, or ALL): ")
+    val userRegionInputRaw = readlnOrNull()?.trim()?.uppercase() ?: return@runBlocking
+
+    val userRegionInput = if (userRegionInputRaw == "ALL") {
+        "ALL CHARGEABILITY AREAS EXCEPT THOSE LISTED"
+    } else {
+        userRegionInputRaw
+    }
 
     val finalActionData = allCategories.filter { it.region.startsWith("Final Action") }
     val match = finalActionData.firstOrNull { c ->

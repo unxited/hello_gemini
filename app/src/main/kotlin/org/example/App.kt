@@ -13,6 +13,14 @@ import java.time.format.DateTimeParseException
 import java.time.Period
 import java.util.Locale
 import org.example.VisaCategory
+import java.time.format.DateTimeFormatterBuilder
+import java.time.temporal.ChronoField
+
+// Month mapping for manual parsing
+private val monthMap = mapOf(
+    "JAN" to 1, "FEB" to 2, "MAR" to 3, "APR" to 4, "MAY" to 5, "JUN" to 6,
+    "JUL" to 7, "AUG" to 8, "SEP" to 9, "OCT" to 10, "NOV" to 11, "DEC" to 12
+)
 
 fun parseEmploymentTableData(table: Element): List<VisaCategory> {
     val categories = mutableListOf<VisaCategory>()
@@ -78,15 +86,23 @@ fun fetchLatestBulletinUrl(): String? {
 
 // helper to parse dates from bulletin strings like 15NOV22/15NOV2022
 fun parseBulletinDate(dateStr: String): LocalDate? {
-    val cleaned = dateStr.trim().uppercase()
+    val cleaned = dateStr.trim().uppercase().replace(Regex("[^A-Z0-9]"), "")
     if (cleaned == "C" || cleaned == "U") return null
-    val patterns = listOf("ddMMMyy", "ddMMMyyyy")
-    for (p in patterns) {
-        try {
-            return LocalDate.parse(cleaned, DateTimeFormatter.ofPattern(p, Locale.US))
-        } catch (e: DateTimeParseException) { /*try next*/ }
+
+    try {
+        val day = cleaned.substring(0, 2).toInt()
+        val monthStr = cleaned.substring(2, 5)
+        val month = monthMap[monthStr] ?: return null
+        var year = cleaned.substring(5).toInt()
+
+        if (year < 100) { // Handle 2-digit years
+            year += 2000
+        }
+
+        return LocalDate.of(year, month, day)
+    } catch (e: Exception) {
+        return null // Catches NumberFormatException, StringIndexOutOfBoundsException, etc.
     }
-    return null
 }
 
 // helper to parse user input date (expects dd-MM-yyyy)

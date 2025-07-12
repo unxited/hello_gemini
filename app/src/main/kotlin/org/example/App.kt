@@ -12,6 +12,30 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.Period
 import java.util.Locale
+import org.example.VisaCategory
+
+fun parseEmploymentTableData(table: Element): List<VisaCategory> {
+    val categories = mutableListOf<VisaCategory>()
+    val rows = table.select("tr")
+    if (rows.isEmpty()) return emptyList()
+
+    val headerCells = rows.first()?.select("td")?.map { it.text() } ?: return emptyList()
+
+    for (i in 1 until rows.size) {
+        val row = rows[i]
+        val cells = row.select("td")
+        if (cells.size < headerCells.size) continue
+
+        val categoryName = cells.first()?.text() ?: continue
+        for (j in 1 until cells.size) {
+            val region = headerCells[j]
+            val date = cells[j].text()
+            categories.add(VisaCategory(categoryName, region, date))
+        }
+    }
+    return categories
+}
+
 
 fun findTableByKeywords(doc: Element, keywords: List<String>): Element? {
     return doc.select("table").firstOrNull { table ->
@@ -77,8 +101,6 @@ fun parseUserDate(dateStr: String): LocalDate? {
 }
 
 fun main() = runBlocking {
-    val parser = VisaBulletinParser()
-
     val defaultUrl = "https://travel.state.gov/content/travel/en/legal/visa-law0/visa-bulletin/2025/visa-bulletin-for-july-2025.html"
     val bulletinUrl = fetchLatestBulletinUrl() ?: defaultUrl
     println("Using bulletin URL: $bulletinUrl")
@@ -106,8 +128,8 @@ fun main() = runBlocking {
         val datesForFilingTable = findTableByTitle(doc, "DATES FOR FILING OF EMPLOYMENT-BASED VISA APPLICATIONS")
 
         if (finalActionTable != null && datesForFilingTable != null) {
-            val finalActionCategories = parser.parseEmploymentTableData(finalActionTable)
-            val datesForFilingCategories = parser.parseEmploymentTableData(datesForFilingTable)
+            val finalActionCategories = parseEmploymentTableData(finalActionTable)
+            val datesForFilingCategories = parseEmploymentTableData(datesForFilingTable)
 
             println("Final Action Categories size: ${finalActionCategories.size}")
             println("Dates for Filing Categories size: ${datesForFilingCategories.size}")

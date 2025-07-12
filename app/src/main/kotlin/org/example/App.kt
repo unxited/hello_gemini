@@ -177,6 +177,7 @@ fun main() = runBlocking {
     }
 
     val bulletinDateStr = match.date.uppercase()
+
     if (bulletinDateStr == "C") {
         println("Your category is CURRENT. You can file immediately.")
         return@runBlocking
@@ -187,6 +188,7 @@ fun main() = runBlocking {
     }
 
     val bulletinDate = parseBulletinDate(bulletinDateStr)
+
     if (bulletinDate == null) {
         println("Could not parse bulletin date: ${match.date}")
         return@runBlocking

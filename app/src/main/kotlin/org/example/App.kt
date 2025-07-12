@@ -140,43 +140,86 @@ fun main() = runBlocking {
         println("Fetching HTML from: $bulletinUrl")
         val doc = Jsoup.connect(bulletinUrl).get()
 
-        val finalActionTable = findTableByTitle(doc, "FINAL ACTION DATES FOR EMPLOYMENT-BASED PREFERENCE CASES")
-        val datesForFilingTable = findTableByTitle(doc, "DATES FOR FILING OF EMPLOYMENT-BASED VISA APPLICATIONS")
+        val empFinalActionTable = findTableByTitle(doc, "FINAL ACTION DATES FOR EMPLOYMENT-BASED PREFERENCE CASES")
+        val empDatesForFilingTable = findTableByTitle(doc, "DATES FOR FILING OF EMPLOYMENT-BASED VISA APPLICATIONS")
+        val famFinalActionTable = findTableByTitle(doc, "FINAL ACTION DATES FOR FAMILY-SPONSORED PREFERENCE CASES")
+        val famDatesForFilingTable = findTableByTitle(doc, "DATES FOR FILING FAMILY-SPONSORED VISA APPLICATIONS")
 
-        if (finalActionTable != null && datesForFilingTable != null) {
-            val finalActionCategories = parseEmploymentTableData(finalActionTable)
-            val datesForFilingCategories = parseEmploymentTableData(datesForFilingTable)
+        val tempCategories = mutableListOf<VisaCategory>()
 
-            println("Final Action Categories size: ${finalActionCategories.size}")
-            println("Dates for Filing Categories size: ${datesForFilingCategories.size}")
+        if (empFinalActionTable != null) {
+            tempCategories.addAll(parseEmploymentTableData(empFinalActionTable).map {
+                it.copy(category = "Employment - ${it.category}", region = "Final Action - ${it.region}")
+            })
+        }
+        if (empDatesForFilingTable != null) {
+            tempCategories.addAll(parseEmploymentTableData(empDatesForFilingTable).map {
+                it.copy(category = "Employment - ${it.category}", region = "Dates for Filing - ${it.region}")
+            })
+        }
+        if (famFinalActionTable != null) {
+            tempCategories.addAll(parseEmploymentTableData(famFinalActionTable).map {
+                it.copy(category = "Family - ${it.category}", region = "Final Action - ${it.region}")
+            })
+        }
+        if (famDatesForFilingTable != null) {
+            tempCategories.addAll(parseEmploymentTableData(famDatesForFilingTable).map {
+                it.copy(category = "Family - ${it.category}", region = "Dates for Filing - ${it.region}")
+            })
+        }
 
-            allCategories = finalActionCategories.map { it.copy(region = "Final Action - ${it.region}") } +
-                          datesForFilingCategories.map { it.copy(region = "Dates for Filing - ${it.region}") }
+        allCategories = tempCategories
 
-            println("Total Categories size: ${allCategories.size}")
-
+        if (allCategories.isNotEmpty()) {
             cacheFile.writeText(Json.encodeToString(allCategories))
             println("Visa bulletin data cached successfully.")
         } else {
             println("Could not find the required tables in the HTML.")
-            allCategories = emptyList()
         }
     }
 
     println("\n--- Final Action Dates for Employment-Based ---")
-    allCategories.filter { it.region.startsWith("Final Action") }.forEach { category ->
-        println("  Category: ${category.category}, Region: ${category.region.removePrefix("Final Action - ")}, Date: ${category.date}")
+    allCategories.filter { it.category.startsWith("Employment") && it.region.startsWith("Final Action") }.forEach { category ->
+        println("  Category: ${category.category.removePrefix("Employment - ")}, Region: ${category.region.removePrefix("Final Action - ")}, Date: ${category.date}")
     }
 
     println("\n--- Dates for Filing of Employment-Based ---")
-    allCategories.filter { it.region.startsWith("Dates for Filing") }.forEach { category ->
-        println("  Category: ${category.category}, Region: ${category.region.removePrefix("Dates for Filing - ")}, Date: ${category.date}")
+    allCategories.filter { it.category.startsWith("Employment") && it.region.startsWith("Dates for Filing") }.forEach { category ->
+        println("  Category: ${category.category.removePrefix("Employment - ")}, Region: ${category.region.removePrefix("Dates for Filing - ")}, Date: ${category.date}")
+    }
+
+    println("\n--- Final Action Dates for Family-Sponsored ---")
+    allCategories.filter { it.category.startsWith("Family") && it.region.startsWith("Final Action") }.forEach { category ->
+        println("  Category: ${category.category.removePrefix("Family - ")}, Region: ${category.region.removePrefix("Final Action - ")}, Date: ${category.date}")
+    }
+
+    println("\n--- Dates for Filing of Family-Sponsored ---")
+    allCategories.filter { it.category.startsWith("Family") && it.region.startsWith("Dates for Filing") }.forEach { category ->
+        println("  Category: ${category.category.removePrefix("Family - ")}, Region: ${category.region.removePrefix("Dates for Filing - ")}, Date: ${category.date}")
     }
 
     // ================= User Interaction =====================
     if (allCategories.isEmpty()) return@runBlocking
 
     println("\n===== Check Your Priority Date =====")
+
+    var visaTypeChoice: String?
+    while (true) {
+        print("Enter Visa Type (1 for Employment-Based, 2 for Family-Sponsored): ")
+        visaTypeChoice = readlnOrNull()?.trim()
+        if (visaTypeChoice == "1" || visaTypeChoice == "2") {
+            break
+        }
+        println("Invalid choice. Please enter 1 or 2.")
+    }
+
+    val visaTypePrefix = if (visaTypeChoice == "1") "Employment" else "Family"
+    val categoryPrompt = if (visaTypeChoice == "1") {
+        "Enter Employment Category (e.g., 1st, 2nd, 3rd): "
+    } else {
+        "Enter Family Category (e.g., F1, F2A, F2B): "
+    }
+
     print("Enter your Priority Date in dd-MM-yyyy format (e.g., 26-10-2023): ")
     val userDateStr = readlnOrNull()?.trim()
     if (userDateStr.isNullOrEmpty()) {
@@ -192,7 +235,7 @@ fun main() = runBlocking {
 
     println("--> Interpreted your priority date as: $userDate")
 
-    print("Enter Employment Category (e.g., 1st, 2nd, 3rd, Other Workers, 4th, 5th): ")
+    print(categoryPrompt)
     val userCat = readlnOrNull()?.trim()?.uppercase() ?: return@runBlocking
 
     print("Enter Region/Country (e.g., INDIA, CHINA- MAINLAND BORN, or ALL): ")
@@ -204,9 +247,13 @@ fun main() = runBlocking {
         userRegionInputRaw
     }
 
-    val finalActionData = allCategories.filter { it.region.startsWith("Final Action") }
+    val finalActionData = allCategories.filter {
+        it.category.startsWith(visaTypePrefix) && it.region.startsWith("Final Action")
+    }
+
     val match = finalActionData.firstOrNull { c ->
-        c.category.uppercase() == userCat && c.region.removePrefix("Final Action - ").uppercase() == userRegionInput
+        val fullCategory = "$visaTypePrefix - $userCat"
+        c.category.uppercase() == fullCategory && c.region.removePrefix("Final Action - ").uppercase() == userRegionInput
     }
 
     if (match == null) {

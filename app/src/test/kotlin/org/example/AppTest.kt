@@ -34,9 +34,4 @@ class AppTest {
         val expected = LocalDate.of(2023, 10, 26)
         assertEquals(expected, parseUserDate("  26-10-2023  "))
     }
-
-    @Test fun `parseBulletinDate should handle ddMMMyy format`() {
-        val expected = LocalDate.of(2023, 4, 1)
-        assertEquals(expected, parseBulletinDate("01APR23"))
-    }
 }

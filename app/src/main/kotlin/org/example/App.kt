@@ -54,19 +54,27 @@ fun fetchLatestBulletinUrl(): String? {
 
 // helper to parse dates from bulletin strings like 15NOV22/15NOV2022
 fun parseBulletinDate(dateStr: String): LocalDate? {
-    val cleaned = dateStr.trim().uppercase().replace(Regex("[^A-Z0-9-]"), "")
+    val cleaned = dateStr.trim().uppercase()
     if (cleaned == "C" || cleaned == "U") return null
+    val patterns = listOf("ddMMMyy", "ddMMMyyyy")
+    for (p in patterns) {
+        try {
+            return LocalDate.parse(cleaned, DateTimeFormatter.ofPattern(p, Locale.US))
+        } catch (e: DateTimeParseException) { /*try next*/ }
+    }
+    return null
+}
+
+// helper to parse user input date (expects dd-MM-yyyy)
+fun parseUserDate(dateStr: String): LocalDate? {
+    val cleaned = dateStr.trim()
     val pattern = "dd-MM-yyyy"
     return try {
-        val formatter = DateTimeFormatter.ofPattern(pattern, Locale.US)
-        LocalDate.parse(cleaned, formatter)
+        LocalDate.parse(cleaned, DateTimeFormatter.ofPattern(pattern, Locale.US))
     } catch (e: DateTimeParseException) {
         null
     }
 }
-
-// helper to parse user input date (expects dd-MM-yyyy)
-fun parseUserDate(dateStr: String): LocalDate? = parseBulletinDate(dateStr)
 
 fun main() = runBlocking {
     val parser = VisaBulletinParser()
